@@ -1,0 +1,24 @@
+{
+  "name": "typescripttemplate",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun run index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^22.10.7",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "pg": "^8.13.1",
+    "reflect-metadata": "^0.2.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-dist": "^5.18.2",
+    "typeorm": "^0.3.20"
+  }
+}
