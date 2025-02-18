@@ -4,9 +4,9 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'TypescriptTemplate API',
+      title: 'GREEP API',
       version: '1.0.0',
-      description: 'API documentation for TypescriptTemplate backend',
+      description: 'API documentation for Greep backend',
     },
     servers: [
       {
