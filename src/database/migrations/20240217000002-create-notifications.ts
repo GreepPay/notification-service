@@ -38,6 +38,11 @@ export class CreateNotifications20240217000002 implements MigrationInterface {
             isNullable: false,
           },
           {
+            name: "email",
+            type: "varchar",
+            isNullable: true,
+          },
+          {
             name: "is_read",
             type: "boolean",
             default: false,

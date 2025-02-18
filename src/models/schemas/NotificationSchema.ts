@@ -1,5 +1,6 @@
 import { EntitySchema } from 'typeorm';
 import { baseColumnOptions } from './BaseSchema';
+import type { NotificationEntity } from '../../forms/notification';
 
 export const NotificationSchema = new EntitySchema<NotificationEntity>({
     name: 'Notification',
