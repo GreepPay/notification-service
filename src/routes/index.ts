@@ -1,5 +1,4 @@
 import router from './router';
-import './userProfile';
-import './verification';
+// import './notification';
 
 export default router;

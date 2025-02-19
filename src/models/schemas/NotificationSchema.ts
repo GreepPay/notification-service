@@ -33,14 +33,4 @@ export const NotificationSchema = new EntitySchema<NotificationEntity>({
             default: 'pending',
         },
     },
-    indices: [
-        { name: "idx_notifications_auth_user_id", columns: ["auth_user_id"] },
-        { name: "idx_notifications_created_at", columns: ["created_at"] },
-        { name: "idx_notifications_is_read", columns: ["is_read"] },
-        { 
-            name: "idx_notifications_user_unread",
-            columns: ["auth_user_id", "created_at"],
-            where: "is_read = false"
-        }
-    ]
 });

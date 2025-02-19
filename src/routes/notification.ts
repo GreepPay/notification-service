@@ -131,35 +131,6 @@ router.add('PUT', `/${APP_VERSION}/notifications/status`, async (request: BunReq
 /**
  * @swagger
  * /v1/notifications:
- *   get:
- *     tags:
- *       - Notifications
- *     summary: Get user's notifications
- *     parameters:
- *       - in: query
- *         name: auth_user_id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Notifications retrieved successfully
- *       400:
- *         description: auth_user_id is required
- *       500:
- *         description: Internal server error
- */
-router.add('GET', `/${APP_VERSION}/notifications`, async (request: BunRequest) => {
-  const result = await notificationController.getUserNotifications(request);
-  return new Response(JSON.stringify(result.body), {
-    headers: { 'Content-Type': 'application/json' },
-    status: result.statusCode
-  });
-});
-
-/**
- * @swagger
- * /v1/notifications:
  *   delete:
  *     tags:
  *       - Notifications

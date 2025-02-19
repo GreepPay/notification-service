@@ -5,6 +5,8 @@ import HttpResponse from "../common/HttpResponse";
 import type { BunRequest } from "../routes/router";
 import { NotificationDeliveryService } from "./NotificationDeliverService";
 
+type DeliveryStatus = 'pending' | 'sent' | 'delivered' | 'failed';
+
 export class NotificationService extends BaseService<NotificationEntity> {
   private deliveryService: NotificationDeliveryService;
   
@@ -43,36 +45,38 @@ export class NotificationService extends BaseService<NotificationEntity> {
         return HttpResponse.failure("Email is required for email notifications", 400);
       }
 
-      // Create notification record
-      const notification = await this.create({
+      const initialNotification = await this.create({
         auth_user_id,
         type,
         email,
-        title: 'Processing...', // Will be updated from template
-        content: 'Processing...', // Will be updated from template
+        title: 'Processing...',
+        content: 'Processing...',
         is_read: false,
-        delivery_status: "pending"
+        delivery_status: 'pending' as DeliveryStatus
       });
 
-      // Deliver the notification
       const deliveryResult = await this.deliveryService.deliverNotification(
-        notification,
+        initialNotification,
         template_id,
         template_data
       );
 
-      // Update notification status
+      const status: DeliveryStatus = 
+        deliveryResult.delivery_status === 'delivered' ? 'delivered' :
+        deliveryResult.delivery_status === 'sent' ? 'sent' :
+        deliveryResult.delivery_status === 'pending' ? 'pending' : 'failed';
+
       const updatedNotification = await this.repository.save({
-        ...notification,
-        delivery_status: deliveryResult.delivery_status
+        ...initialNotification,
+        delivery_status: status
       });
 
       if (!deliveryResult.success) {
-        updatedNotification
         return HttpResponse.failure(
           `Failed to deliver notification: ${deliveryResult.error}`,
           500,
-        ); 
+          updatedNotification
+        );
       }
 
       return HttpResponse.success(
@@ -94,7 +98,6 @@ export class NotificationService extends BaseService<NotificationEntity> {
         is_read: boolean;
       };
 
-      // Validate required fields
       if (!auth_user_id) {
         return HttpResponse.failure("auth_user_id is required", 400);
       }
@@ -105,7 +108,6 @@ export class NotificationService extends BaseService<NotificationEntity> {
         return HttpResponse.failure("is_read status is required", 400);
       }
 
-      // Find notification
       const notification = await this.repository.findOne({
         where: { id: notification_id, auth_user_id }
       });
@@ -114,7 +116,6 @@ export class NotificationService extends BaseService<NotificationEntity> {
         return HttpResponse.failure("Notification not found", 404);
       }
 
-      // Update notification
       const updatedNotification = await this.repository.save({
         ...notification,
         is_read
@@ -126,7 +127,6 @@ export class NotificationService extends BaseService<NotificationEntity> {
       return HttpResponse.failure("Failed to update notification status", 500);
     }
   }
-
 
   async deleteNotification(request: BunRequest) {
     try {

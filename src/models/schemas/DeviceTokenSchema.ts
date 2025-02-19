@@ -23,10 +23,5 @@ export const DeviceTokenSchema = new EntitySchema<DeviceTokenEntity>({
             type: Boolean,
             default: true,
         },
-    },
-    indices: [
-        { name: "idx_device_tokens_auth_user_id", columns: ["auth_user_id"] },
-        { name: "idx_device_tokens_token", columns: ["token"] },
-        { name: "idx_device_tokens_is_active", columns: ["is_active"] }
-    ]
+    }
 });

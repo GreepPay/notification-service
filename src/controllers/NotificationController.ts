@@ -5,15 +5,11 @@ export class NotificationController {
   private notificationService = new NotificationService();
 
   async create(request: BunRequest) {
-    return await this.notificationService.createNotification(request);
+    return await this.notificationService.sendNotification(request);
   }
 
   async updateStatus(request: BunRequest) {
     return await this.notificationService.updateNotificationStatus(request);
-  }
-
-  async getUserNotifications(request: BunRequest) {
-    return await this.notificationService.getUserNotifications(request);
   }
 
   async delete(request: BunRequest) {
