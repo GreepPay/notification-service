@@ -92,20 +92,6 @@ export class NotificationTemplateService extends BaseService<NotificationTemplat
     }
   }
 
-  async getTemplates(request: BunRequest) {
-    try {
-      const { type } = request.query;
-      
-      const where = type ? { type } : {};
-      const templates = await this.repository.find({ where });
-      
-      return HttpResponse.success("Templates retrieved successfully", templates);
-    } catch (error) {
-      console.error("Error retrieving templates:", error);
-      return HttpResponse.failure("Failed to retrieve templates", 500);
-    }
-  }
-
   async deleteTemplate(request: BunRequest) {
     try {
       const { id } = await request.json() as { id: number };

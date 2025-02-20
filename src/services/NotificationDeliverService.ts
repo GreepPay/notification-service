@@ -6,6 +6,7 @@ import type { DeviceTokenEntity } from "../forms/deviceToken";
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import nodemailer from 'nodemailer';
+import * as admin from 'firebase-admin';
 
 export class NotificationDeliveryService {
   private templateRepository;
@@ -151,7 +152,7 @@ export class NotificationDeliveryService {
       const processedContent = this.processTemplateContent(template.content, data);
       const processedTitle = this.processTemplateContent(template.subject, data);
 
-      const message = {
+      const message: admin.messaging.MulticastMessage = {
         tokens: deviceTokens.map(dt => dt.token),
         notification: {
           title: processedTitle,
@@ -163,7 +164,7 @@ export class NotificationDeliveryService {
           type: notification.type,
         },
         android: {
-          priority: 'high',
+          priority: 'high' as const,
         },
         apns: {
           payload: {
@@ -175,7 +176,7 @@ export class NotificationDeliveryService {
         },
       };
 
-      const response = await this.firebaseMessaging.sendMulticast(message);
+      const response = await this.firebaseMessaging.sendEachForMulticast(message);
 
       if (response.failureCount > 0) {
         const failedTokens = deviceTokens.filter((_, index) => !response.responses[index].success);
