@@ -3,7 +3,7 @@ import { baseColumnOptions } from './BaseSchema';
 import type { NotificationEntity } from '../../forms/notification';
 
 export const NotificationSchema = new EntitySchema<NotificationEntity>({
-    name: 'Notification',
+    name: 'Notifications',
     columns: {
         ...baseColumnOptions,
         auth_user_id: {
@@ -14,6 +14,10 @@ export const NotificationSchema = new EntitySchema<NotificationEntity>({
             type: 'enum',
             enum: ['email', 'push'],
             nullable: false,
+        },
+        email: {
+            type: String,
+            nullable: true,
         },
         title: {
             type: String,

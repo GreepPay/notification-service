@@ -3,19 +3,20 @@ import { NotificationTemplateSchema, DeviceTokenSchema } from "../models/schemas
 import type { NotificationEntity } from "../forms/notification";
 import type { NotificationTemplateEntity } from "../forms/notificationTemplate";
 import type { DeviceTokenEntity } from "../forms/deviceToken";
-import * as admin from 'firebase-admin';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getMessaging } from 'firebase-admin/messaging';
 import nodemailer from 'nodemailer';
 
 export class NotificationDeliveryService {
   private templateRepository;
   private deviceTokenRepository;
   private emailTransporter;
+  private firebaseMessaging;
 
   constructor() {
     this.templateRepository = AppDataSource.getRepository(NotificationTemplateSchema);
     this.deviceTokenRepository = AppDataSource.getRepository(DeviceTokenSchema);
-    
-    // Initialize email transporter
+
     this.emailTransporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587'),
@@ -24,17 +25,32 @@ export class NotificationDeliveryService {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      tls: { rejectUnauthorized: false }
+    });
+
+    // Verify the connection
+    this.emailTransporter.verify((error, success) => {
+      if (error) {
+        console.error('SMTP connection error:', error);
+      } else {
+        console.log('SMTP server is ready to take our messages');
+      }
     });
 
     // Initialize Firebase Admin
-    if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
+    try {
+      const app = initializeApp({
+        credential: cert({
           projectId: process.env.FIREBASE_PROJECT_ID,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
           privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
         }),
       });
+
+      this.firebaseMessaging = getMessaging(app);
+    } catch (error) {
+      console.error('Error initializing Firebase Admin:', error);
+      throw error;
     }
   }
 
@@ -52,7 +68,7 @@ export class NotificationDeliveryService {
 
   private async getUserDeviceTokens(auth_user_id: string): Promise<DeviceTokenEntity[]> {
     return await this.deviceTokenRepository.find({
-      where: { 
+      where: {
         auth_user_id,
         is_active: true
       }
@@ -67,20 +83,47 @@ export class NotificationDeliveryService {
     try {
       const processedContent = this.processTemplateContent(template.content, data);
       const processedSubject = this.processTemplateContent(template.subject, data);
-
-      await this.emailTransporter.sendMail({
+  
+      // Debug logs
+      console.log('Email Details:', {
         from: process.env.SMTP_FROM,
         to: notification.email,
         subject: processedSubject,
-        html: processedContent,
+        content: processedContent
       });
-
+  
+      if (!notification.email) {
+        throw new Error('Recipient email address is missing');
+      }
+  
+      const mailOptions = {
+        from: {
+          name: 'Greep',
+          address: process.env.SMTP_FROM || ''
+        },
+        to: notification.email,
+        subject: processedSubject,
+        html: processedContent,
+      };
+  
+      // Validate mail options
+      if (!mailOptions.to || !mailOptions.from.address) {
+        throw new Error(`Invalid email configuration: to=${mailOptions.to}, from=${mailOptions.from.address}`);
+      }
+  
+      const result = await this.emailTransporter.sendMail(mailOptions);
+      console.log('Email sent successfully:', result);
+  
       return {
         success: true,
         delivery_status: 'delivered'
       };
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('Email sending error details:', {
+        notification_email: notification.email,
+        template_id: template.id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       return {
         success: false,
         delivery_status: 'failed',
@@ -96,7 +139,7 @@ export class NotificationDeliveryService {
   ) {
     try {
       const deviceTokens = await this.getUserDeviceTokens(notification.auth_user_id);
-      
+
       if (!deviceTokens.length) {
         return {
           success: false,
@@ -108,7 +151,7 @@ export class NotificationDeliveryService {
       const processedContent = this.processTemplateContent(template.content, data);
       const processedTitle = this.processTemplateContent(template.subject, data);
 
-      const message: admin.messaging.MulticastMessage = {
+      const message = {
         tokens: deviceTokens.map(dt => dt.token),
         notification: {
           title: processedTitle,
@@ -132,10 +175,9 @@ export class NotificationDeliveryService {
         },
       };
 
-      const response = await admin.messaging().sendMulticast(message);
+      const response = await this.firebaseMessaging.sendMulticast(message);
 
       if (response.failureCount > 0) {
-        // Handle failed tokens
         const failedTokens = deviceTokens.filter((_, index) => !response.responses[index].success);
         await this.handleFailedTokens(failedTokens);
       }

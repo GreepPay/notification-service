@@ -3,7 +3,7 @@ import type { NotificationTemplateEntity } from '../../forms/notificationTemplat
 import { baseColumnOptions } from './BaseSchema';
 
 export const NotificationTemplateSchema = new EntitySchema<NotificationTemplateEntity>({
-    name: 'NotificationTemplate',
+    name: 'NotificationTemplates',
     columns: {
         ...baseColumnOptions,
         name: {

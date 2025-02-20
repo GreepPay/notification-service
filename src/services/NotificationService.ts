@@ -22,13 +22,17 @@ export class NotificationService extends BaseService<NotificationEntity> {
         type, 
         email, 
         template_id,
-        template_data 
+        template_data,
+        title,
+        content
       } = await request.json() as {
         auth_user_id: string;
         type: 'email' | 'push';
         email?: string;
         template_id: number;
         template_data: Record<string, any>;
+        title: string;
+        content: string;
       };
 
       // Validate required fields
@@ -44,13 +48,19 @@ export class NotificationService extends BaseService<NotificationEntity> {
       if (type === "email" && !email) {
         return HttpResponse.failure("Email is required for email notifications", 400);
       }
+      if (!title) {
+        return HttpResponse.failure("Title is required", 400);
+      }
+      if (!content) {
+        return HttpResponse.failure("Content is required", 400);
+      }
 
       const initialNotification = await this.create({
         auth_user_id,
         type,
         email,
-        title: 'Processing...',
-        content: 'Processing...',
+        title,
+        content,
         is_read: false,
         delivery_status: 'pending' as DeliveryStatus
       });
@@ -73,9 +83,8 @@ export class NotificationService extends BaseService<NotificationEntity> {
 
       if (!deliveryResult.success) {
         return HttpResponse.failure(
-          `Failed to deliver notification: ${deliveryResult.error}`,
-          500,
-          updatedNotification
+          `Failed to deliver notification: ${deliveryResult.error}. ID: ${updatedNotification.id}`,
+          500
         );
       }
 

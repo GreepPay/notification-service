@@ -3,7 +3,7 @@ import type { DeviceTokenEntity } from '../../forms/deviceToken';
 import { baseColumnOptions } from './BaseSchema';
 
 export const DeviceTokenSchema = new EntitySchema<DeviceTokenEntity>({
-    name: 'DeviceToken',
+    name: 'DeviceTokens',
     columns: {
         ...baseColumnOptions,
         auth_user_id: {

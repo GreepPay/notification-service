@@ -1,8 +1,8 @@
-import { NotificationTemplateController } from '../controllers/NotificationTemplateController';
-import router, { type BunRequest } from './router';
+import { NotificationTemplateController } from "../controllers/NotificationTemplateController";
+import router, { type BunRequest } from "./router";
 
 const templateController = new NotificationTemplateController();
-const APP_VERSION = 'v1';
+const APP_VERSION = "v1";
 
 /**
  * @swagger
@@ -67,19 +67,37 @@ const APP_VERSION = 'v1';
  *                 type: string
  *               metadata:
  *                 type: object
+ *                 properties:
+ *                   category:
+ *                     type: string
+ *                     description: Category of the notification template
+ *                     example: "onboarding"
+ *                   requiredVariables:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                     description: List of variables required by the template
+ *                     example: ["username", "email"]
+ *                 example:
+ *                   category: "onboarding"
+ *                   requiredVariables: ["username", "email"]
  *     responses:
  *       201:
  *         description: Template created successfully
  *       409:
  *         description: Template with this name already exists
  */
-router.add('POST', `/${APP_VERSION}/notification-templates`, async (request: BunRequest) => {
-  const result = await templateController.create(request);
-  return new Response(JSON.stringify(result.body), {
-    headers: { 'Content-Type': 'application/json' },
-    status: result.statusCode
-  });
-});
+router.add(
+  "POST",
+  `/${APP_VERSION}/notification-templates`,
+  async (request: BunRequest) => {
+    const result = await templateController.create(request);
+    return new Response(JSON.stringify(result.body), {
+      headers: { "Content-Type": "application/json" },
+      status: result.statusCode,
+    });
+  }
+);
 
 /**
  * @swagger
@@ -116,13 +134,17 @@ router.add('POST', `/${APP_VERSION}/notification-templates`, async (request: Bun
  *       404:
  *         description: Template not found
  */
-router.add('PUT', `/${APP_VERSION}/notification-templates`, async (request: BunRequest) => {
-  const result = await templateController.update(request);
-  return new Response(JSON.stringify(result.body), {
-    headers: { 'Content-Type': 'application/json' },
-    status: result.statusCode
-  });
-});
+router.add(
+  "PUT",
+  `/${APP_VERSION}/notification-templates`,
+  async (request: BunRequest) => {
+    const result = await templateController.update(request);
+    return new Response(JSON.stringify(result.body), {
+      headers: { "Content-Type": "application/json" },
+      status: result.statusCode,
+    });
+  }
+);
 
 /**
  * @swagger
@@ -148,12 +170,16 @@ router.add('PUT', `/${APP_VERSION}/notification-templates`, async (request: BunR
  *       404:
  *         description: Template not found
  */
-router.add('DELETE', `/${APP_VERSION}/notification-templates`, async (request: BunRequest) => {
-  const result = await templateController.delete(request);
-  return new Response(JSON.stringify(result.body), {
-    headers: { 'Content-Type': 'application/json' },
-    status: result.statusCode
-  });
-});
+router.add(
+  "DELETE",
+  `/${APP_VERSION}/notification-templates`,
+  async (request: BunRequest) => {
+    const result = await templateController.delete(request);
+    return new Response(JSON.stringify(result.body), {
+      headers: { "Content-Type": "application/json" },
+      status: result.statusCode,
+    });
+  }
+);
 
 export default router;

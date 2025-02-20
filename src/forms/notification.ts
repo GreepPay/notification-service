@@ -4,7 +4,7 @@ export interface NotificationEntity {
     type: 'email' | 'push';
     title: string;
     content: string;
-    email: string;
+    email: string | null;
     is_read: boolean;
     delivery_status: 'pending' | 'sent' | 'delivered' | 'failed';
     created_at: Date;

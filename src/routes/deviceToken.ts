@@ -113,4 +113,41 @@ router.add('PUT', `/${APP_VERSION}/device-tokens`, async (request: BunRequest) =
   });
 });
 
+/**
+ * @swagger
+ * /v1/device-tokens:
+ *   delete:
+ *     tags:
+ *       - Device Tokens
+ *     summary: Delete a device token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - auth_user_id
+ *               - token
+ *             properties:
+ *               auth_user_id:
+ *                 type: string
+ *               token:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Device token deleted successfully
+ *       400:
+ *         description: Invalid input
+ *       404:
+ *         description: Device token not found
+ */
+router.add('DELETE', `/${APP_VERSION}/device-tokens`, async (request: BunRequest) => {
+  const result = await deviceTokenController.delete(request);
+  return new Response(JSON.stringify(result.body), {
+    headers: { 'Content-Type': 'application/json' },
+    status: result.statusCode
+  });
+});
+
 export default router;
