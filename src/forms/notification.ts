@@ -10,3 +10,10 @@ export interface NotificationEntity {
     created_at: Date;
     updated_at: Date;
 }
+
+export interface BroadcastNotificationOptions {
+    notificationType: string;
+    additionalData?: Record<string, any>;
+    priority?: 'high' | 'normal';
+  }
+  
