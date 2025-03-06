@@ -1,5 +1,12 @@
 import { DataSource } from 'typeorm';
-import { User } from './models/User';
+import dotenv from 'dotenv';
+import { 
+  NotificationSchema,
+  NotificationTemplateSchema,
+  DeviceTokenSchema
+} from './models/schemas';
+
+dotenv.config();
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -8,9 +15,13 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  synchronize: true,
+  synchronize: false,
   logging: true,
-  entities: [User],
+  entities: [
+    NotificationSchema,
+    NotificationTemplateSchema,
+    DeviceTokenSchema
+  ],
   subscribers: [],
-  migrations: [],
-}); 
+  migrations: ['src/database/migrations/*.ts'],
+});

@@ -1,63 +1,75 @@
-import { routes } from './routes';
-import { AppDataSource } from './data-source.ts';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { swaggerSpec } from './config/swagger.ts';
+import "./routes";
+import router from "./routes/router";
+import { AppDataSource } from "./data-source.ts";
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
+import { swaggerSpec } from "./config/swagger.ts";
+
+const swaggerUiPath = join(__dirname, "../node_modules/swagger-ui-dist");
 
 AppDataSource.initialize()
   .then(() => {
     Bun.serve({
-      port: parseInt(process.env.PORT || '3000'),
+      port: parseInt(process.env.PORT || "3000"),
       async fetch(req: Request) {
         const url = new URL(req.url);
-        const pathname = url.pathname as keyof typeof routes;
-        
-        // Serve Swagger UI
-        if (url.pathname === '/api-docs') {
-            const swaggerHtml = readFileSync(
-              join(__dirname, '../node_modules/swagger-ui-dist/index.html'),
-              'utf-8'
+
+        if (url.pathname === "/api-docs") {
+          let swaggerHtml = readFileSync(
+            join(swaggerUiPath, "index.html"),
+            "utf-8",
+          );
+
+          let initializerPath = join(swaggerUiPath, "swagger-initializer.js");
+
+          // Replace "https://petstore.swagger.io/v2/swagger.json" with "/swagger.json" in file
+          if (existsSync(initializerPath)) {
+            let initializerContent = readFileSync(initializerPath, "utf-8");
+            initializerContent = initializerContent.replace(
+              "https://petstore.swagger.io/v2/swagger.json",
+              "/swagger.json",
             );
-            return new Response(swaggerHtml.replace(
-              'https://petstore.swagger.io/v2/swagger.json',
-              '/swagger.json'
-            ), {
-              headers: { 'Content-Type': 'text/html' },
-            });
-          }
-  
-          // Serve OpenAPI specification
-          if (url.pathname === '/swagger.json') {
-            return new Response(JSON.stringify(swaggerSpec), {
-              headers: { 'Content-Type': 'application/json' },
-            });
+
+            swaggerHtml = swaggerHtml.replace(
+              /<script src=".\/swagger-initializer\.js" charset="UTF-8"> <\/script>/,
+              `<script>${initializerContent}</script>`,
+            );
           }
 
-        // Handle API routes
-        const route = routes[pathname];
-        if (route) {
-          switch (req.method) {
-            case 'GET':
-              const getData = await route.GET();
-              return new Response(JSON.stringify(getData), {
-                headers: { 'Content-Type': 'application/json' },
-              });
-            case 'POST':
-              const body = await req.json();
-              const postData = await route.POST(body as any);
-              return new Response(JSON.stringify(postData), {
-                headers: { 'Content-Type': 'application/json' },
-                status: 201,
-              });
-            default:
-              return new Response('Method Not Allowed', { status: 405 });
-          }
-        } else {
-          return new Response('Not Found', { status: 404 });
+          return new Response(swaggerHtml, {
+            headers: { "Content-Type": "text/html" },
+          });
         }
+
+        if (url.pathname === "/swagger.json") {
+          return new Response(JSON.stringify(swaggerSpec), {
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        const filePath = join(swaggerUiPath, url.pathname);
+        if (existsSync(filePath)) {
+          const fileContent = readFileSync(filePath);
+          return new Response(fileContent, {
+            headers: { "Content-Type": getContentType(url.pathname) },
+          });
+        }
+
+        // Handle API routes
+        return router.match(req);
       },
     });
 
-    console.log(`Server running on http://localhost:${process.env.PORT || 3000}`);
+    console.log(
+      `Server running on http://localhost:${process.env.PORT || 3000}`,
+    );
   })
   .catch((error) => console.log(error));
+
+function getContentType(pathname: string): string {
+  if (pathname.endsWith(".css")) return "text/css";
+  if (pathname.endsWith(".js")) return "application/javascript";
+  if (pathname.endsWith(".png")) return "image/png";
+  if (pathname.endsWith(".json")) return "application/json";
+  return "text/plain";
+}
