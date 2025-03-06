@@ -10,7 +10,8 @@ const swaggerUiPath = join(__dirname, "../node_modules/swagger-ui-dist");
 AppDataSource.initialize()
   .then(() => {
     Bun.serve({
-      port: parseInt(process.env.PORT || "3000"),
+      hostname: "0.0.0.0", // Bind to all IP addresses
+      port: parseInt(process.env.PORT || "8080"),
       async fetch(req: Request) {
         const url = new URL(req.url);
 
@@ -61,7 +62,7 @@ AppDataSource.initialize()
     });
 
     console.log(
-      `Server running on http://localhost:${process.env.PORT || 3000}`,
+      `Server running on http://localhost:${process.env.PORT || 8080}`,
     );
   })
   .catch((error) => console.log(error));
