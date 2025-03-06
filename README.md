@@ -1,4 +1,4 @@
-# Bun.js Backend Template
+# Notification Service
 
 A modern backend template built with **Bun.js**, **TypeScript**, and **PostgreSQL**. This project follows an **Object-Oriented Programming (OOP)** approach and includes features like **TypeORM** for database management, **Swagger** for API documentation, and a clean folder structure for scalability.
 
