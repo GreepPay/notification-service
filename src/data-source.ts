@@ -1,11 +1,11 @@
 import { DataSource } from 'typeorm';
 import dotenv from 'dotenv';
 import fs from "fs";
-// import { 
-//   NotificationSchema,
-//   NotificationTemplateSchema,
-//   DeviceTokenSchema
-// } from './models/schemas';
+import { 
+  NotificationSchema,
+  NotificationTemplateSchema,
+  DeviceTokenSchema
+} from './models/schemas';
 
 dotenv.config();
 
@@ -28,9 +28,9 @@ export const AppDataSource = new DataSource({
       }
     : false,
   entities: [
-    // NotificationSchema,
-    // NotificationTemplateSchema,
-    // DeviceTokenSchema
+    NotificationSchema,
+    NotificationTemplateSchema,
+    DeviceTokenSchema
   ],
   subscribers: [],
   migrations: ['src/database/migrations/*.ts'],
