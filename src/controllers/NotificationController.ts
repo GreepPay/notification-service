@@ -8,6 +8,10 @@ export class NotificationController {
     return await this.notificationService.sendNotification(request);
   }
 
+  async broadcast(request: BunRequest) {
+    return await this.notificationService.sendBroadcastNotification(request);
+  }
+
   async updateStatus(request: BunRequest) {
     return await this.notificationService.updateNotificationStatus(request);
   }

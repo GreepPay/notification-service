@@ -237,4 +237,59 @@ router.add('DELETE', `/${APP_VERSION}/notifications`, async (request: BunRequest
   });
 });
 
+/**
+ * @swagger
+ * /v1/notifications/broadcast:
+ *   post:
+ *     tags:
+ *       - Notifications
+ *     summary: Send a broadcast notification to multiple users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - user_ids
+ *               - template_id
+ *               - template_data
+ *               - notification_type
+ *             properties:
+ *               user_ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of user IDs to receive the notification
+ *               template_id:
+ *                 type: number
+ *               template_data:
+ *                 type: object
+ *                 description: Data to be used in template placeholders
+ *               notification_type:
+ *                 type: string
+ *                 example: "new_order"
+ *               additional_data:
+ *                 type: object
+ *                 description: Additional data to be sent with notification
+ *               priority:
+ *                 type: string
+ *                 enum: [high, normal]
+ *                 default: high
+ *     responses:
+ *       200:
+ *         description: Broadcast notification sent successfully
+ *       400:
+ *         description: Invalid input
+ *       500:
+ *         description: Failed to send notification
+ */
+router.add('POST', `/${APP_VERSION}/notifications/broadcast`, async (request: BunRequest) => {
+  const result = await notificationController.broadcast(request);
+  return new Response(JSON.stringify(result.body), {
+    headers: { 'Content-Type': 'application/json' },
+    status: result.statusCode
+  });
+});
+
 export default router;

@@ -3,7 +3,7 @@ import {
   NotificationTemplateSchema,
   DeviceTokenSchema,
 } from "../models/schemas";
-import type { NotificationEntity } from "../forms/notification";
+import type { BroadcastNotificationOptions, NotificationEntity } from "../forms/notification";
 import type { NotificationTemplateEntity } from "../forms/notificationTemplate";
 import type { DeviceTokenEntity } from "../forms/deviceToken";
 import { initializeApp, cert, type App } from "firebase-admin/app";
@@ -62,8 +62,7 @@ export class NotificationDeliveryService {
     }
   }
 
-  // Rest of your methods remain exactly the same...
-  private async getTemplate(
+  public async getTemplate(
     templateId: number
   ): Promise<NotificationTemplateEntity | null> {
     return await this.templateRepository.findOne({
@@ -186,10 +185,8 @@ export class NotificationDeliveryService {
       const processedContent = this.processTemplateContent(template.content, data);
       const processedTitle = this.processTemplateContent(template.subject, data);
   
-      // Log the token for debugging
       console.log('Device token:', validTokens[0].token);
   
-      // Create a basic message first
       const basicMessage = {
         token: validTokens[0].token.trim(),
         notification: {
@@ -230,6 +227,8 @@ export class NotificationDeliveryService {
       };
     }
   }
+
+  
 
   private async handleFailedTokens(failedTokens: DeviceTokenEntity[]) {
     for (const token of failedTokens) {
@@ -278,5 +277,121 @@ export class NotificationDeliveryService {
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
+  }
+
+  async sendBroadcastNotification(
+    userIds: string[],
+    template: NotificationTemplateEntity,
+    data: Record<string, any>,
+    options: BroadcastNotificationOptions
+  ) {
+    try {
+      // Get all device tokens for all users
+      const allDeviceTokens = await Promise.all(
+        userIds.map(userId => this.getUserDeviceTokens(userId))
+      );
+  
+      // Flatten and filter valid tokens
+      const validTokens = allDeviceTokens
+        .flat()
+        .filter(dt => dt.token.trim().length > 0 && dt.token.length <= 4096)
+        .map(dt => dt.token.trim());
+  
+      if (!validTokens.length) {
+        return {
+          success: false,
+          delivery_status: 'failed',
+          error: 'No valid device tokens found for any user'
+        };
+      }
+  
+      const processedContent = this.processTemplateContent(template.content, data);
+      const processedTitle = this.processTemplateContent(template.subject, data);
+  
+      // Split tokens into chunks of 500 (Firebase limit)
+      const tokenChunks = this.chunkArray(validTokens, 500);
+      let totalSuccess = 0;
+      let totalFailure = 0;
+      const errors: string[] = [];
+  
+      // Send to each chunk
+      for (const tokens of tokenChunks) {
+        const message = {
+          tokens: tokens,
+          notification: {
+            title: processedTitle,
+            body: processedContent
+          },
+          data: {
+            ...this.sanitizeData(data),
+            ...this.sanitizeData(options.additionalData || {}),
+            type: options.notificationType
+          },
+          android: {
+            priority: options.priority || 'high' as const
+          }
+        };
+  
+        try {
+          const response = await this.firebaseMessaging.sendEachForMulticast(message);
+          totalSuccess += response.successCount;
+          totalFailure += response.failureCount;
+  
+          if (response.failureCount > 0) {
+            const failedTokenEntities = allDeviceTokens
+              .flat()
+              .filter(dt => {
+                const failedIndices = response.responses
+                  .map((resp, index) => !resp.success ? index : -1)
+                  .filter(index => index !== -1);
+                return failedIndices.includes(tokens.indexOf(dt.token.trim()));
+              });
+          
+            await this.handleFailedTokens(failedTokenEntities);
+            
+            const chunkErrors = response.responses
+              .filter(resp => !resp.success && resp.error)
+              .map(resp => resp.error?.message || 'Unknown error')
+              .filter((message): message is string => message !== undefined);
+            errors.push(...chunkErrors);
+          }
+        } catch (error) {
+          console.error('Error sending chunk:', error);
+          errors.push(error instanceof Error ? error.message : 'Unknown error');
+        }
+      }
+  
+      return {
+        success: totalSuccess > 0,
+        delivery_status: totalFailure === 0 ? 'delivered' : 'partial',
+        successCount: totalSuccess,
+        failureCount: totalFailure,
+        errors: errors.length > 0 ? errors : undefined
+      };
+    } catch (error) {
+      console.error('Broadcast notification error:', error);
+      return {
+        success: false,
+        delivery_status: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+  
+  private chunkArray<T>(array: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
+  }
+  
+  private sanitizeData(data: Record<string, any>): Record<string, string> {
+    return Object.entries(data).reduce((acc, [key, value]) => {
+      if (value !== undefined && value !== null) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {} as Record<string, string>);
   }
 }

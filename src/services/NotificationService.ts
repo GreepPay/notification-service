@@ -8,7 +8,7 @@ import { NotificationDeliveryService } from "./NotificationDeliverService";
 type DeliveryStatus = 'pending' | 'sent' | 'delivered' | 'failed';
 
 export class NotificationService extends BaseService<NotificationEntity> {
-  private deliveryService: NotificationDeliveryService;
+  public deliveryService: NotificationDeliveryService;
   
   constructor() {
     super(NotificationSchema);
@@ -164,6 +164,73 @@ export class NotificationService extends BaseService<NotificationEntity> {
     } catch (error) {
       console.error("Error deleting notification:", error);
       return HttpResponse.failure("Failed to delete notification", 500);
+    }
+  }
+
+  async sendBroadcastNotification(request: BunRequest) {
+    try {
+      const { 
+        user_ids, 
+        template_id,
+        template_data,
+        notification_type,
+        additional_data,
+        priority
+      } = await request.json() as {
+        user_ids: string[];
+        template_id: number;
+        template_data: Record<string, any>;
+        notification_type: string;
+        additional_data?: Record<string, any>;
+        priority?: 'high' | 'normal';
+      };
+  
+      // Validate required fields
+      if (!user_ids || !user_ids.length) {
+        return HttpResponse.failure("user_ids are required", 400);
+      }
+      if (!template_id) {
+        return HttpResponse.failure("template_id is required", 400);
+      }
+      if (!notification_type) {
+        return HttpResponse.failure("notification_type is required", 400);
+      }
+  
+      // Get the template
+      const template = await this.deliveryService.getTemplate(template_id);
+      if (!template) {
+        return HttpResponse.failure("Template not found", 404);
+      }
+  
+      const deliveryResult = await this.deliveryService.sendBroadcastNotification(
+        user_ids,
+        template,
+        template_data,
+        {
+          notificationType: notification_type,
+          additionalData: additional_data,
+          priority
+        }
+      );
+  
+      if (!deliveryResult.success) {
+        return HttpResponse.failure(
+          `Failed to deliver broadcast notification: ${deliveryResult.error}`,
+          500
+        );
+      }
+  
+      return HttpResponse.success(
+        "Broadcast notification sent successfully",
+        {
+          successCount: deliveryResult.successCount,
+          failureCount: deliveryResult.failureCount
+        }
+      );
+  
+    } catch (error) {
+      console.error("Error sending broadcast notification:", error);
+      return HttpResponse.failure("Failed to send broadcast notification", 500);
     }
   }
 }
