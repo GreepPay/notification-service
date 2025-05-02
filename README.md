@@ -6,7 +6,7 @@ A modern backend template built with **Bun.js**, **TypeScript**, and **PostgreSQ
 
 ## Features
 
-- **Bun.js**: Fast and modern runtime for JavaScript and TypeScript.
+- **Bun.js**: Fast and modern runtime for JavaScript and TypeScript..
 - **TypeScript**: Strongly typed codebase for better maintainability.
 - **PostgreSQL**: Relational database with **TypeORM** for ORM support.
 - **Swagger**: Automatically generated API documentation.
