@@ -119,7 +119,7 @@ export class NotificationDeliveryService {
       const mailOptions = {
         from: {
           name: "Greep",
-          address: process.env.SMTP_FROM || "",
+          address: process.env.SMTP_FROM || "noreply@greep.io",
         },
         to: notification.email,
         subject: processedSubject,
