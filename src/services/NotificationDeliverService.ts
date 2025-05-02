@@ -117,18 +117,15 @@ export class NotificationDeliveryService {
       }
 
       const mailOptions = {
-        from: {
-          name: "Greep",
-          address: process.env.SMTP_FROM || "",
-        },
+        from: `"Greep" <${process.env.SMTP_FROM}>`,
         to: notification.email,
         subject: processedSubject,
         html: processedContent,
       };
 
-      if (!mailOptions.to || !mailOptions.from.address) {
+      if (!mailOptions.to || !mailOptions.from) {
         throw new Error(
-          `Invalid email configuration: to=${mailOptions.to}, from=${mailOptions.from.address}`
+          `Invalid email configuration: to=${mailOptions.to}, from=${mailOptions.from}`
         );
       }
 
