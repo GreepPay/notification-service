@@ -8,12 +8,11 @@ import type { NotificationTemplateEntity } from "../forms/notificationTemplate";
 import type { DeviceTokenEntity } from "../forms/deviceToken";
 import { initializeApp, cert, type App } from "firebase-admin/app";
 import { getMessaging, type Messaging } from "firebase-admin/messaging";
-import nodemailer from "nodemailer";
+import { sendZeptoMail } from "../helpers/sendZeptoMail";
 
 export class NotificationDeliveryService {
   private templateRepository;
   private deviceTokenRepository;
-  private emailTransporter;
   private firebaseMessaging: Messaging;
   private firebaseApp: App;
 
@@ -22,27 +21,6 @@ export class NotificationDeliveryService {
       NotificationTemplateSchema
     );
     this.deviceTokenRepository = AppDataSource.getRepository(DeviceTokenSchema);
-
-    this.emailTransporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      tls: {
-        rejectUnauthorized: true,
-      },
-    });
-
-    this.emailTransporter.verify((error, success) => {
-      if (error) {
-        console.error("SMTP connection error:", error);
-      } else {
-        console.log("SMTP server is ready to take our messages");
-      }
-    });
 
     // Initialize Firebase
     try {
@@ -106,40 +84,28 @@ export class NotificationDeliveryService {
         template.subject,
         data
       );
-
-      console.log("Email Details:", {
-        from: process.env.SMTP_FROM,
-        to: notification.email,
-        subject: processedSubject,
-        content: processedContent,
-      });
-
+  
       if (!notification.email) {
         throw new Error("Recipient email address is missing");
       }
-
-      const mailOptions = {
-        from: `"Greep" <${process.env.SMTP_FROM}>`,
+  
+      const result = await sendZeptoMail({
         to: notification.email,
+        name: notification.title || "User",
         subject: processedSubject,
-        html: processedContent,
-      };
-
-      if (!mailOptions.to || !mailOptions.from) {
-        throw new Error(
-          `Invalid email configuration: to=${mailOptions.to}, from=${mailOptions.from}`
-        );
-      }
-
-      const result = await this.emailTransporter.sendMail(mailOptions);
-      console.log("Email sent successfully:", result);
-
+        htmlbody: processedContent,
+      });
+  
+      if (!result.success) throw new Error(result.error);
+  
+      console.log("ZeptoMail sent successfully:", result.data);
+  
       return {
         success: true,
         delivery_status: "delivered",
       };
     } catch (error) {
-      console.error("Email sending error details:", {
+      console.error("ZeptoMail sending error:", {
         notification_email: notification.email,
         template_id: template.id,
         error: error instanceof Error ? error.message : "Unknown error",
